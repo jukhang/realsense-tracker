@@ -2,7 +2,7 @@
 
 #### 介绍
 
-Realsense D435i + t265实现目标跟随。
+Realsense D435i实现目标跟随，输出topic /cmd_vel。
 
 #### 设备 & 版本
 
