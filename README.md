@@ -29,3 +29,30 @@ Realsense D435i实现目标跟随，输出topic tracker/cmd_vel。
 - GOTURN Tracker：这是OpenCV中唯一一深度学习为基础的目标检测器。它需要额外的模型才能运行，本文不详细讲解。（最低支持OpenCV 3.2.0）
 
 一般使用：`CSRT`（精度高）或者 `KCF`（速度快）
+
+### 使用
+
+**!注意：** 由于重新编译安装了Jetson nx的Opencv版本，其中ROS的cv_bridge也要重新编译安装。
+
+编译过程有诸多问题，建议自行解决。
+
+```sh
+git clone https://github.com/wadasworths/realsense-tracker.git
+
+cd realsense-tracker/
+
+cp -r track_pkg csrt_track ~/catkin_ws/src
+cd ~/catkin_ws
+
+catkin_make
+```
+
+### 运行
+
+```sh
+roslaunch realsense2_camera rs_camera.launch
+
+rosrun csrt_track csrt_track
+```
+
+**!注意：**小车底盘接受cmd_vel的topic需要remap
