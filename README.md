@@ -2,7 +2,11 @@
 
 #### 介绍
 
-Realsense D435i实现目标跟随，输出topic /cmd_vel。
+Realsense D435i实现目标跟随，输出topic tracker/cmd_vel。
+
+- track_pkg 实现了KCF算法
+
+- csrt_track 基于Opencv内置的csrt算法。效果相对较好
 
 #### 设备 & 版本
 

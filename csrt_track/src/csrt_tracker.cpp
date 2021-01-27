@@ -12,15 +12,14 @@
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
-
-#include "kcftracker.hpp"
+#include <opencv2/tracking/tracking.hpp>
+#include <opencv2/core/ocl.hpp>
 
 static const std::string RGB_WINDOW = "RGB Image window";
-//static const std::string DEPTH_WINDOW = "DEPTH Image window";
 
-#define Max_linear_speed 0.6
-#define Min_linear_speed 0.4
-#define Min_distance 1.0
+#define Max_linear_speed 0.5
+#define Min_linear_speed 0.3
+#define Min_distance 1.5
 #define Max_distance 5.0
 #define Max_rotation_speed 0.75
 
@@ -41,9 +40,9 @@ int ERROR_OFFSET_X_right2 = 540;
 
 cv::Mat rgbimage;
 cv::Mat depthimage;
-cv::Rect selectRect;
+cv::Rect2d selectRect;
 cv::Point origin;
-cv::Rect result;
+cv::Rect2d result;
 
 bool select_flag = false;
 bool bRenewROI = false;  // the flag to enable the implementation of KCF algorithm for the new chosen ROI
@@ -56,8 +55,8 @@ bool MULTISCALE = true;
 bool SILENT = true;
 bool LAB = false;
 
-// Create KCFTracker object
-KCFTracker tracker(HOG, FIXEDWINDOW, MULTISCALE, LAB);
+// Create CSRTracker object
+cv::Ptr<cv::TrackerCSRT> tracker = cv::TrackerCSRT::create();
 
 float dist_val[5] ;
 
@@ -69,14 +68,14 @@ void onMouse(int event, int x, int y, int, void*)
         selectRect.y = MIN(origin.y, y);
         selectRect.width = abs(x - origin.x);   
         selectRect.height = abs(y - origin.y);
-        selectRect &= cv::Rect(0, 0, rgbimage.cols, rgbimage.rows);
+        selectRect &= cv::Rect2d(0, 0, rgbimage.cols, rgbimage.rows);
     }
     if (event == cv::EVENT_LBUTTONDOWN)
     {
         bBeginKCF = false;  
         select_flag = true; 
         origin = cv::Point(x, y);       
-        selectRect = cv::Rect(x, y, 0, 0);  
+        selectRect = cv::Rect2d(x, y, 0, 0);  
     }
     else if (event == cv::EVENT_LBUTTONUP)
     {
@@ -111,7 +110,7 @@ public:
     	camera_info_ = nh_.subscribe("/camera/aligned_depth_to_color/camera_info", 1,
           &ImageConverter::cameraInfoCb, this);
     	
-		pub = nh_.advertise<geometry_msgs::Twist>("tracker/cmd_vel", 1000); // track/cmd_vel
+		pub = nh_.advertise<geometry_msgs::Twist>("tarcker/cmd_vel", 1000); // track/cmd_vel
 
 		cv::namedWindow(RGB_WINDOW);
     	//cv::namedWindow(DEPTH_WINDOW);
@@ -143,7 +142,7 @@ public:
 
  		if(bRenewROI)
     	{
-        	tracker.init(selectRect, rgbimage);
+        	tracker->init(rgbimage, selectRect);
         	bBeginKCF = true;
        	 	bRenewROI = false;
         	enable_get_depth = false;
@@ -151,9 +150,15 @@ public:
 
     	if(bBeginKCF)
     	{
-        	result = tracker.update(rgbimage);
-        	cv::rectangle(rgbimage, result, cv::Scalar( 0, 255, 255 ), 1, 8 );
-        	enable_get_depth = true;
+        	bool res = tracker->update(rgbimage, selectRect);
+			if (res)
+			{
+				result = selectRect;
+				cv::rectangle(rgbimage, result, cv::Scalar( 0, 255, 255 ), 1, 8 );
+				enable_get_depth = true;
+			}
+        	// cv::rectangle(rgbimage, result, cv::Scalar( 0, 255, 255 ), 1, 8 );
+        	// enable_get_depth = true;
     	}
     	else
         	cv::rectangle(rgbimage, selectRect, cv::Scalar(255, 0, 0), 2, 8, 0);
@@ -177,7 +182,7 @@ public:
   		}
   		catch (cv_bridge::Exception& e)
   		{
-  			ROS_ERROR( "cv_bridge exception: %s", e.what() );
+			ROS_ERROR( "cv_bridge exception: %s", e.what() );
 			return;
   		}
 
@@ -224,20 +229,16 @@ public:
       		else 
         		rotation_speed = 0;
 
-      		std::cout <<  "linear_speed = " << linear_speed << "  rotation_speed = " << rotation_speed << std::endl;
-
       		// std::cout <<  dist_val[0]  << " / " <<  dist_val[1] << " / " << dist_val[2] << " / " << dist_val[3] <<  " / " << dist_val[4] << std::endl;
-      		// std::cout <<  "distance = " << distance << std::endl;
+      		std::cout <<  "distance = " << distance << std::endl;
 		}
 
-  		//cv::imshow(DEPTH_WINDOW, depthimage);
-  		// cv::waitKey(1);
   	}
 };
 
 int main(int argc, char** argv)
 {
-	ros::init(argc, argv, "kcf_tracker");
+	ros::init(argc, argv, "csrt_track");
 	ImageConverter ic;
   
 	while(ros::ok())
@@ -259,3 +260,4 @@ int main(int argc, char** argv)
 
 	return 0;
 }
+
