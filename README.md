@@ -59,5 +59,6 @@ rosrun csrt_track csrt_track
 
 ### 参考
 
-[tracker_kcf_ros](https://github.com/TianyeAlex/tracker_kcf_ros.git)
-[librealsense](https://github.com/IntelRealSense/librealsense.git)
+- [tracker_kcf_ros](https://github.com/TianyeAlex/tracker_kcf_ros.git)
+
+- [librealsense](https://github.com/IntelRealSense/librealsense.git)
